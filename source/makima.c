@@ -178,8 +178,10 @@ int main()
           // TODO: Event handling
       case Expose:
           /* The window has been resized */
-          // TODO: Change glViewport to new size
           XGetWindowAttributes(x11_display, x11_window, &x11_window_attr);
+          x11_window_width = x11_window_attr.width;
+          x11_window_height = x11_window_attr.height;
+          glViewport(0, 0, x11_window_width, x11_window_height);
           log_debug("Window resized; Window width %d; Window height %d", x11_window_attr.width, x11_window_attr.height);
           break;
 
