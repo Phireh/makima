@@ -4,4 +4,4 @@ LIBS=-lX11 -lGL
 SOURCE=source
 
 makima: $(SOURCE)/makima.c $(SOURCE)/makima.h
-	$(CC) $(CFLAGS) $(LIBS) $(SOURCE)/makima.c $(SOURCE)/makima.h -o makima
+	$(CC) $(CFLAGS) $(SOURCE)/makima.c $(SOURCE)/makima.h $(LIBS) -o makima
