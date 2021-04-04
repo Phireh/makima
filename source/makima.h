@@ -77,8 +77,8 @@ PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
 /* OpenGL globals */
 GLXContext glx_context;
 // TODO: Move shaders to their own folder
-char *vertex_shader_path = "source/shader.vs";
-char *fragment_shader_path = "source/shader.fs";
+char *vertex_shader_path = "source/color_shader.vs";
+char *fragment_shader_path = "source/color_shader.fs";
 
 
 /* Function signatures */
@@ -88,5 +88,6 @@ unsigned int build_shader(char *source, int type);
 unsigned int build_shader_from_file(char *pathname, int type);
 int link_gl_functions(void);
 void draw_test_triangle(void);
+void draw_pyramid_test(void);
 
 #endif

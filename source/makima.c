@@ -201,7 +201,8 @@ int main()
       /* Rendering */
       glClearColor(1.0f, 0.6f, 1.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
-      draw_test_triangle();
+      //draw_test_triangle();
+      draw_pyramid_test();
       glXSwapBuffers(x11_display, x11_window);
     }
     /* Cleanup */  
@@ -221,7 +222,7 @@ int check_for_glx_extension(char *extension, Display *display, int screen_id)
     if (where || *extension == '\0')
         return 0;
     extensions = (const GLubyte *) glXQueryExtensionsString(display, screen_id);
-//    log_debug("Extensions found: %s", extensions);
+    // log_debug("Extensions found: %s", extensions);
     /* It takes a bit of care to be fool-proof about parsing the
        OpenGL extensions string. Don't be fooled by sub-strings,
        etc. */
@@ -320,13 +321,68 @@ void draw_test_triangle(void)
 
     
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) * sizeof(float), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(0);
 
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+void draw_pyramid_test(void)
+{
+    float vertices[] = {
+       0.0f,   0.43f,    0.0f,
+       -0.5f,  -0.43f,  -0.5f,
+       0.5f,   -0.43f,  -0.5f,
+       0.0f,   -0.43f,  -0.5f      
+    };
+    float colours[] = {
+       1.0f,   1.0f,   1.0f,
+       1.0f,   0.0f,   0.0f,
+       0.0f,   1.0f,   0.0f,
+       0.0f,   0.0f,   1.0f     
+    };
+    uint numIndices = 12;
+    uint indices[] = 
+    {
+        3,1,2, 0,1,2, 0,3,2, 0,2,3
+    };
+    
+    static unsigned int program = 0;
+    if (!program)
+        program = make_gl_program(build_shader_from_file(vertex_shader_path, GL_VERTEX_SHADER), build_shader_from_file(fragment_shader_path, GL_FRAGMENT_SHADER));
+    glUseProgram(program);
+    
+    static unsigned int vao;
+    if (!vao)
+        glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    
+    static unsigned int position_bo = 0;
+    if (!position_bo)
+        glGenBuffers(1, &position_bo);
+    glBindBuffer(GL_ARRAY_BUFFER, position_bo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glEnableVertexAttribArray(0);
+
+    static unsigned int colour_bo = 0;
+    if (!colour_bo)
+        glGenBuffers(1, &colour_bo);
+    glBindBuffer(GL_ARRAY_BUFFER, colour_bo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glEnableVertexAttribArray(1);
+
+    static unsigned int element_bo;
+    if (!element_bo)
+        glGenBuffers(1, &element_bo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_bo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+    glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, (void*)0);
 }
 
 int link_gl_functions(void)
