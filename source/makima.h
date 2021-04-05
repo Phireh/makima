@@ -72,6 +72,8 @@ PFNGLBINDBUFFERPROC              glBindBuffer;
 PFNGLBUFFERDATAPROC              glBufferData;
 PFNGLVERTEXATTRIBPOINTERPROC     glVertexAttribPointer;
 PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+PFNGLGETUNIFORMLOCATIONPROC      glGetUniformLocation;
+PFNGLUNIFORM1FPROC               glUniform1f;
 
 
 /* OpenGL globals */

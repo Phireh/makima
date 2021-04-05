@@ -338,6 +338,11 @@ void draw_test_triangle(void)
 
 void draw_pyramid_test(void)
 {
+    /* We are being disgusting human beings here and incrementing a counter as a
+       poor man's time variable for simplicity */
+    static float time_counter = 0.0f;
+    time_counter += 0.1f;
+    
     float vertices[] = {
        0.0f,   0.43f,    0.0f,
        -0.5f,  -0.43f,  -0.5f,
@@ -360,6 +365,12 @@ void draw_pyramid_test(void)
     if (!program)
         program = make_gl_program(build_shader_from_file(vertex_shader_path, GL_VERTEX_SHADER), build_shader_from_file(fragment_shader_path, GL_FRAGMENT_SHADER));
     glUseProgram(program);
+
+    static int uniform_location = -1;
+    if (uniform_location == -1)
+        uniform_location = glGetUniformLocation(program, "time");
+    
+    glUniform1f(uniform_location, time_counter);
     
     static unsigned int vao;
     if (!vao)
@@ -413,6 +424,9 @@ int link_gl_functions(void)
     glBufferData              = (PFNGLBUFFERDATAPROC)             glXGetProcAddress((const GLubyte *)"glBufferData");
     glVertexAttribPointer     = (PFNGLVERTEXATTRIBPOINTERPROC)    glXGetProcAddress((const GLubyte *)"glVertexAttribPointer");
     glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)glXGetProcAddress((const GLubyte *)"glEnableVertexAttribArray");
+    glGetUniformLocation      = (PFNGLGETUNIFORMLOCATIONPROC)     glXGetProcAddress((const GLubyte *)"glGetUniformLocation");
+    glUniform1f               = (PFNGLUNIFORM1FPROC)              glXGetProcAddress((const GLubyte *)"glUniform1f");
+        
     
     return 1;
 }
