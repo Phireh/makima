@@ -205,7 +205,8 @@ int main()
 
       /* Rendering */
       glClearColor(1.0f, 0.6f, 1.0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       //draw_test_triangle();
       draw_pyramid_test();
       glXSwapBuffers(x11_display, x11_window);
