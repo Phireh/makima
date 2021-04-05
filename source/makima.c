@@ -344,19 +344,20 @@ void draw_pyramid_test(void)
     time_counter += 0.1f;
     
     float vertices[] = {
-       0.0f,   0.43f,    0.0f,
+        0.0f,   0.43f,   0.0f,
        -0.5f,  -0.43f,  -0.5f,
-       0.5f,   -0.43f,  -0.5f,
-       0.0f,   -0.43f,  -0.5f      
+        0.5f,  -0.43f,  -0.5f,
+        0.0f,  -0.43f,   0.5f      
     };
+
     float colours[] = {
        1.0f,   1.0f,   1.0f,
        1.0f,   0.0f,   0.0f,
        0.0f,   1.0f,   0.0f,
        0.0f,   0.0f,   1.0f     
     };
-    uint numIndices = 12;
-    uint indices[] = 
+    uint num_indices = 12;
+    uint indices[] =
     {
         3,1,2, 0,1,2, 0,3,2, 0,2,3
     };
@@ -372,7 +373,7 @@ void draw_pyramid_test(void)
     
     glUniform1f(uniform_location, time_counter);
     
-    static unsigned int vao;
+    static unsigned int vao = 0;
     if (!vao)
         glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -393,13 +394,13 @@ void draw_pyramid_test(void)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(1);
 
-    static unsigned int element_bo;
+    static unsigned int element_bo = 0;
     if (!element_bo)
         glGenBuffers(1, &element_bo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_bo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-    glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, (void*)0);
+    glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
 }
 
 int link_gl_functions(void)

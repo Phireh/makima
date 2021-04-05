@@ -17,6 +17,6 @@ void main() {
                              sin(time), 0.0,  cos(time), 0.0,  // 3rd column
                                    0.0, 0.0,        0.0, 1.0); // 4th column
     
-    gl_Position = modelMatrixY*vec4(position, 1.0);
+    gl_Position = modelMatrixX*vec4(position, 1.0);
     fColor = vColor;
 }
