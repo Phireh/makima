@@ -170,33 +170,38 @@ int main()
     while (main_loop_state == RUNNING)
     {
         /* Event handling */      
-      // TODO: Sleep so we don't burn the CPU
-      XNextEvent(x11_display, &x11_event);
+        // TODO: Sleep so we don't burn the CPU
+        //XNextEvent(x11_display, &x11_event);
 
-      switch (x11_event.type)
-      {          
-          // TODO: Event handling
-      case Expose:
-          /* The window has been resized */
-          XGetWindowAttributes(x11_display, x11_window, &x11_window_attr);
-          x11_window_width = x11_window_attr.width;
-          x11_window_height = x11_window_attr.height;
-          glViewport(0, 0, x11_window_width, x11_window_height);
-          log_debug("Window resized; Window width %d; Window height %d", x11_window_attr.width, x11_window_attr.height);
-          break;
+        if (XCheckWindowEvent(x11_display, x11_window, x11_window_set_attr.event_mask, &x11_event))
+        {
 
-      case ClientMessage:
-          /* Petition to close window by the window manager. See Xlib's ICCCM docs */
-          if (x11_event.xclient.data.l[0] == (long int)wmDeleteMessage)
-          {
-              main_loop_state = FINISHED;
-              log_debug("Closing window by window manager's request");
-          }
-          break;
+      
+            switch (x11_event.type)
+            {          
+                // TODO: Event handling
+            case Expose:
+                /* The window has been resized */
+                XGetWindowAttributes(x11_display, x11_window, &x11_window_attr);
+                x11_window_width = x11_window_attr.width;
+                x11_window_height = x11_window_attr.height;
+                glViewport(0, 0, x11_window_width, x11_window_height);
+                log_debug("Window resized; Window width %d; Window height %d", x11_window_attr.width, x11_window_attr.height);
+                break;
+
+            case ClientMessage:
+                /* Petition to close window by the window manager. See Xlib's ICCCM docs */
+                if (x11_event.xclient.data.l[0] == (long int)wmDeleteMessage)
+                {
+                    main_loop_state = FINISHED;
+                    log_debug("Closing window by window manager's request");
+                }
+                break;
           
-      default:
-          break;
-      }
+            default:
+                break;
+            }
+        } // event handling end
 
       /* Rendering */
       glClearColor(1.0f, 0.6f, 1.0f, 1.0f);
