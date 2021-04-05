@@ -338,8 +338,8 @@ void draw_pyramid_test(void)
 {
     /* We are being disgusting human beings here and incrementing a counter as a
        poor man's time variable for simplicity */
-    static float time_counter = 0.0f;
-    time_counter += 0.1f;
+    static float current_rot = 0.0f;
+    current_rot += 2 * 3.141596f * get_delta_time(); // 1 full rotation per second
     
     float vertices[] = {
         0.0f,   0.43f,   0.0f,
@@ -367,9 +367,9 @@ void draw_pyramid_test(void)
 
     static int uniform_location = -1;
     if (uniform_location == -1)
-        uniform_location = glGetUniformLocation(program, "time");
+        uniform_location = glGetUniformLocation(program, "rot");
     
-    glUniform1f(uniform_location, time_counter);
+    glUniform1f(uniform_location, current_rot);
     
     static unsigned int vao = 0;
     if (!vao)
@@ -428,4 +428,33 @@ int link_gl_functions(void)
         
     
     return 1;
+}
+
+float get_delta_time()
+{
+    static double time_lf = 0;
+    if (!time_lf)
+        time_lf = get_current_time();
+
+    double time_cf = get_current_time();
+    float delta = time_cf - time_lf;
+
+    time_lf = time_cf;
+    return delta;
+}
+
+double get_current_time()
+{
+    long            ns; // Nanoseconds
+    time_t          s;  // Seconds
+    struct timespec spec;
+
+    clock_gettime(CLOCK_REALTIME, &spec);
+
+    s  = spec.tv_sec;
+    ns = spec.tv_nsec;
+
+    double currentSeconds = s + ns / 1.0e9;
+
+    return currentSeconds;
 }

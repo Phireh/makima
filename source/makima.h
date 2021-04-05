@@ -17,6 +17,8 @@
 #include <GL/glx.h>
 #include <GL/glext.h>
 
+/* Standard C libraries related includes */
+#include <time.h>
 
 /* Convenience macros */
 // NOTE: ##__VA_ARGS__ is a compiler extension and may not be portable. Maybe check for compiler defs here.
@@ -91,5 +93,7 @@ unsigned int build_shader_from_file(char *pathname, int type);
 int link_gl_functions(void);
 void draw_test_triangle(void);
 void draw_pyramid_test(void);
+float get_delta_time();
+double get_current_time();
 
 #endif
