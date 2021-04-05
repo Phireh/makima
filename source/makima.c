@@ -171,12 +171,10 @@ int main()
     {
         /* Event handling */      
         // TODO: Sleep so we don't burn the CPU
-        //XNextEvent(x11_display, &x11_event);
 
-        if (XCheckWindowEvent(x11_display, x11_window, x11_window_set_attr.event_mask, &x11_event))
+        while (XPending(x11_display))
         {
-
-      
+            XNextEvent(x11_display, &x11_event);
             switch (x11_event.type)
             {          
                 // TODO: Event handling
