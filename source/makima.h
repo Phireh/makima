@@ -11,6 +11,7 @@
    requires linking with -lX11 */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/XKBlib.h>
 
 /* OpenGL related includes:
    requires linking with -lGL */
@@ -19,6 +20,9 @@
 
 /* Standard C libraries related includes */
 #include <time.h>
+
+/* Internal includes */
+#include "makima_input.h"
 
 /* Convenience macros */
 // NOTE: ##__VA_ARGS__ is a compiler extension and may not be portable. Maybe check for compiler defs here.

@@ -89,7 +89,7 @@ int main()
     x11_window_set_attr.override_redirect = True;
     x11_window_set_attr.colormap = XCreateColormap(x11_display, RootWindow(x11_display, x11_screen_id), glx_visual->visual, AllocNone);
     // NOTE: Unneeded for the moment, this is for input handling
-    x11_window_set_attr.event_mask = KeyPressMask | KeyReleaseMask | KeymapStateMask | ExposureMask | ButtonPressMask | ButtonReleaseMask | ButtonMotionMask;
+    x11_window_set_attr.event_mask = KeyPressMask | KeyReleaseMask | KeymapStateMask | ExposureMask | ButtonPressMask | ButtonReleaseMask | ButtonMotionMask | PointerMotionMask;
 
     // NOTE: We can't use XCreateSimpleWindow if we need GLX/OpenGL
     x11_window = XCreateWindow(x11_display,
@@ -159,6 +159,10 @@ int main()
     // Actually show the window
     XMapRaised(x11_display, x11_window);
 
+    // Tell X11 to send autorepeat keys as a secuence of presses, instead of press+release
+    Bool detectable_autorepeat_sup;
+    XkbSetDetectableAutoRepeat(x11_display, true, &detectable_autorepeat_sup);  
+
     // How large is the window
     XWindowAttributes x11_window_attr;
     XGetWindowAttributes(x11_display, x11_window, &x11_window_attr);
@@ -166,9 +170,33 @@ int main()
     /* Window message loop */
 
     XEvent x11_event;
+    KeySym keysym = 0;
     main_loop_state_t main_loop_state = RUNNING;
     while (main_loop_state == RUNNING)
     {
+
+        /* NOTE: The basic input handling loop is as follows:
+           We mantain 2 different structures: the last frame, and current frame inputs.
+         
+           Each frame we copy the last recorded input, then use the function
+           consume_first_presses to make the sure keys are only in JUST_RELEASED/PRESSED
+           states for a single frame.                  
+        */
+
+        double input_phase_stamp = get_current_time();
+
+        for (int i = 0; i < MAX_PLAYERS; ++i)
+        {
+            last_frame_input[i] = curr_frame_input[i];
+        }
+      
+        player_input_t *player1_input = &curr_frame_input[PLAYER_1];
+        player_input_t *player1_last_input = &last_frame_input[PLAYER_1];
+
+        /* HACK: We are just starting a frame, so there can be no JUST_PRESSED
+           buttons just yet. Clean all of them for all active players */
+        consume_first_presses(player1_input);
+      
         /* Event handling */      
         // TODO: Sleep so we don't burn the CPU
 
@@ -177,7 +205,6 @@ int main()
             XNextEvent(x11_display, &x11_event);
             switch (x11_event.type)
             {          
-                // TODO: Event handling
             case Expose:
                 /* The window has been resized */
                 XGetWindowAttributes(x11_display, x11_window, &x11_window_attr);
@@ -195,19 +222,242 @@ int main()
                     log_debug("Closing window by window manager's request");
                 }
                 break;
+
+            case ButtonPress:
+            {
+                unsigned int button_pressed = ((XButtonEvent*)&x11_event)->button;
+                switch (button_pressed) {
+                case LEFT_MOUSE_BUTTON:
+                    set_input_state(&player1_input->mouse_left_click,
+                                    &player1_last_input->mouse_left_click,
+                                    PRESSED,
+                                    input_phase_stamp);
+                    break;
+                case WHEEL_PRESS_MOUSE_BUTTON: 
+                    break;
+                case RIGHT_MOUSE_BUTTON:
+                    set_input_state(&player1_input->mouse_right_click,
+                                    &player1_last_input->mouse_right_click,
+                                    PRESSED,
+                                    input_phase_stamp);                  
+                    break;
+                case WHEEL_UP_MOUSE_BUTTON: 
+                    break;
+                case WHEEL_DOWN_MOUSE_BUTTON:
+                    break;
+                default:
+                    /* TODO: Despite not being defined in X11/X.h,
+                       we can capture button presses from additional mouse buttons (8, 9...)
+                    */
+                    break;
+                }
+            } break;
+            case ButtonRelease:
+            {
+                unsigned int button_pressed = ((XButtonEvent*)&x11_event)->button;
+                /* int x = ((XButtonEvent*)&x11_event)->x; */
+                /* int y = ((XButtonEvent*)&x11_event)->y; */
+                switch (button_pressed)
+                {
+                case LEFT_MOUSE_BUTTON:
+                    set_input_state(&player1_input->mouse_left_click,
+                                    &player1_last_input->mouse_left_click,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case WHEEL_PRESS_MOUSE_BUTTON: 
+                    break;
+                case RIGHT_MOUSE_BUTTON:
+                    set_input_state(&player1_input->mouse_right_click,
+                                    &player1_last_input->mouse_right_click,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case WHEEL_UP_MOUSE_BUTTON: 
+                    break;
+                case WHEEL_DOWN_MOUSE_BUTTON:
+                    break;
+                default:
+                        /* TODO: Despite not being defined in X11/X.h,
+                           we can capture button presses from additional mouse buttons (8, 9...)
+                        */
+                    break;                  
+                }
+            } break;
+
+            case MotionNotify:
+            {
+                int x = ((XPointerMovedEvent*)&x11_event)->x;
+                int y = ((XPointerMovedEvent*)&x11_event)->y;
+                /* Save old cursor coords */
+                player1_last_input->cursor_x = player1_input->cursor_x;
+                player1_last_input->cursor_y = player1_input->cursor_y;
+              
+                /* Store the new ones */
+                player1_input->cursor_x = x;
+                player1_input->cursor_y = y;
+            } break;
+
+            case KeyPress:
+            {
+                keysym = XLookupKeysym(&x11_event.xkey, 0);
+
+                /* Look for modifier keys */
+                unsigned int mod_keys = ((XKeyEvent*)&x11_event)->state;
+                dispatch_mod_keys(mod_keys);
           
+                switch (keysym)
+                {
+                case XK_Escape:
+                    main_loop_state = FINISHED;
+                    break;
+
+                case XK_Shift_L:
+                case XK_Shift_R:
+                    set_shift_key();
+                    break;
+                case XK_Control_L:
+                case XK_Control_R:
+                    set_ctrl_key();
+                    break;
+                case XK_Alt_L:
+                case XK_Alt_R:
+                    set_alt_key();
+                    break;
+
+                case XK_W:
+                case XK_w:
+                    set_input_state(&player1_input->forward,
+                                    &player1_last_input->forward,
+                                    PRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_S:
+                case XK_s:
+                    set_input_state(&player1_input->back,
+                                    &player1_last_input->back,
+                                    PRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_A:
+                case XK_a:
+                    set_input_state(&player1_input->left,
+                                    &player1_last_input->left,
+                                    PRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_D:
+                case XK_d: 
+                    set_input_state(&player1_input->right,
+                                    &player1_last_input->right,
+                                    PRESSED,
+                                    input_phase_stamp);                 
+                    break;
+                case XK_R:
+                case XK_r:
+                    set_input_state(&player1_input->up,
+                                    &player1_last_input->up,
+                                    PRESSED,
+                                    input_phase_stamp);                 
+                    break;
+                case XK_F:
+                case XK_f:
+                    set_input_state(&player1_input->down,
+                                    &player1_last_input->down,
+                                    PRESSED,
+                                    input_phase_stamp);
+                } break;
+            } break;
+
+            case KeyRelease:
+            {
+                keysym = XLookupKeysym(&x11_event.xkey, 0);
+                switch (keysym)
+                {
+                case XK_Shift_L:
+                case XK_Shift_R:
+                    unset_shift_key();
+                    break;
+                case XK_Control_L:
+                case XK_Control_R:
+                    unset_ctrl_key();
+                    break;
+                case XK_Alt_L:
+                case XK_Alt_R:
+                    unset_alt_key();
+                    break;
+                  
+                case XK_W:
+                case XK_w:
+                    set_input_state(&player1_input->forward,
+                                    &player1_last_input->forward,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_S:
+                case XK_s:
+                    set_input_state(&player1_input->back,
+                                    &player1_last_input->back,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_A:
+                case XK_a:
+                    set_input_state(&player1_input->left,
+                                    &player1_last_input->left,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_D:
+                case XK_d:
+                    set_input_state(&player1_input->right,
+                                    &player1_last_input->right,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_R:
+                case XK_r:
+                    set_input_state(&player1_input->up,
+                                    &player1_last_input->up,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                case XK_F:
+                case XK_f:
+                    set_input_state(&player1_input->down,
+                                    &player1_last_input->down,
+                                    UNPRESSED,
+                                    input_phase_stamp);
+                    break;
+                }
+            } break;
+            
             default:
                 break;
-            }
+          }
         } // event handling end
 
-      /* Rendering */
-      glClearColor(1.0f, 0.6f, 1.0f, 1.0f);
-      glEnable(GL_DEPTH_TEST);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      //draw_test_triangle();
-      draw_pyramid_test();
-      glXSwapBuffers(x11_display, x11_window);
+
+        /* Copy mod_key information to player input struct */
+        player1_input->alt = alt_key_is_set();
+        player1_input->ctrl = ctrl_key_is_set();
+        player1_input->shift = shift_key_is_set();
+
+        /* Auxiliar struct members for comfier input handling */
+        player1_input->cursor_x_delta = (int)player1_input->cursor_x - (int)player1_last_input->cursor_x;
+        player1_input->cursor_y_delta = (int)player1_input->cursor_y - (int)player1_last_input->cursor_y;
+
+        /* TODO: Logic here */
+       
+        
+
+        /* Rendering */
+        glClearColor(1.0f, 0.6f, 1.0f, 1.0f);
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //draw_test_triangle();
+        draw_pyramid_test();
+        glXSwapBuffers(x11_display, x11_window);
     }
     /* Cleanup */  
     XDestroyWindow(x11_display, x11_window);
